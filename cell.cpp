@@ -40,42 +40,42 @@ public:
 class Cell::TextImpl : public Impl {
 public:
 
-    TextImpl(std::string value) : value_(std::move(value)) {}
+    TextImpl(std::string value) : text_(std::move(value)) {}
 
     Value GetValue() const override {
-        if (value_[0] == ESCAPE_SIGN) {
-            return value_.substr(1);
+        if (text_[0] == ESCAPE_SIGN) {
+            return text_.substr(1);
         }
-        return value_;
+        return text_;
     }
 
     std::string GetText() const override {
-        return value_;
+        return text_;
     }
 
 private:
-    std::string value_;
+    std::string text_;
 };
 
 class Cell::FormulaImpl : public Impl {
 public:
     explicit FormulaImpl(std::string text, const SheetInterface& sheet) : sheet_(sheet) {
-        value_ = ParseFormula(text);
+        formula_ = ParseFormula(text);
     }
 
     Value GetValue() const override {
         if (!cachedValue_) {
-            cachedValue_ = value_->Evaluate(sheet_);
+            cachedValue_ = formula_->Evaluate(sheet_);
         }
         return std::visit([&](const auto& v) { return Value(v); }, *cachedValue_);
     }
 
     std::string GetText() const override {
-        return FORMULA_SIGN + value_->GetExpression();
+        return FORMULA_SIGN + formula_->GetExpression();
     }
 
     std::vector<Position> GetReferencedCells() const override {
-        return value_->GetReferencedCells();
+        return formula_->GetReferencedCells();
     }
 
     bool IsCacheValid() const override {
@@ -88,7 +88,7 @@ public:
 
 private:
     const SheetInterface& sheet_;
-    std::unique_ptr<FormulaInterface> value_;
+    std::unique_ptr<FormulaInterface> formula_;
     mutable std::optional<FormulaInterface::Value> cachedValue_;
 };
 
@@ -122,7 +122,7 @@ void Cell::Set(std::string text) {
 }
 
 void Cell::Clear() {
-    impl_ = std::make_unique<EmptyImpl>();
+    Set("");
 }
 
 Cell::Value Cell::GetValue() const {

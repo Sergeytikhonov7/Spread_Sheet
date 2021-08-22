@@ -31,4 +31,6 @@ private:
     void InsertRows(const Position pos);
     Size CalculatePrintableSize();
     bool IsCellInTable(const Position pos);
+    void IsValidPosition(const Position& pos) const;
+    void ResizePrintableArea(const Position& pos);
 };

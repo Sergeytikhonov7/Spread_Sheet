@@ -9,15 +9,17 @@ using namespace std::literals;
 Sheet::~Sheet() {}
 
 void Sheet::SetCell(Position pos, std::string text) {
-    if (!pos.IsValid()) {
-        throw InvalidPositionException("Invalid position");
-    }
+    IsValidPosition(pos);
     InsertRows(pos);
     auto& cell = cells_[pos.row][pos.col];
     if (!cell) {
         cell = std::make_unique<Cell>(*this);
     }
     cell->Set(text);
+    ResizePrintableArea(pos);
+}
+
+void Sheet::ResizePrintableArea(const Position& pos) {
     if (pos.row + 1 > printable_size_.rows) {
         printable_size_.rows = pos.row + 1;
     }
@@ -26,10 +28,14 @@ void Sheet::SetCell(Position pos, std::string text) {
     }
 }
 
-const CellInterface* Sheet::GetCell(Position pos) const {
+void Sheet::IsValidPosition(const Position& pos) const {
     if (!pos.IsValid()) {
         throw InvalidPositionException("Invalid position");
     }
+}
+
+const CellInterface* Sheet::GetCell(Position pos) const {
+    IsValidPosition(pos);
     if (pos.row >= int(cells_.size()) || pos.col >= int(cells_[pos.row].size())) {
         return nullptr;
     }
@@ -37,19 +43,11 @@ const CellInterface* Sheet::GetCell(Position pos) const {
 }
 
 CellInterface* Sheet::GetCell(Position pos) {
-    if (!pos.IsValid()) {
-        throw InvalidPositionException("Invalid position");
-    }
-    if (pos.row >= int(cells_.size()) || pos.col >= int(cells_[pos.row].size())) {
-        return nullptr;
-    }
-    return cells_[pos.row][pos.col].get();
+    return const_cast<CellInterface*>(static_cast<const Sheet&>(*this).GetCell(pos));
 }
 
 void Sheet::ClearCell(Position pos) {
-    if (!pos.IsValid()) {
-        throw InvalidPositionException("Invalid position");
-    }
+    IsValidPosition(pos);
     if (IsCellInTable(pos)) {
         if (auto& cell = cells_[pos.row][pos.col]) {
             cell->Clear();
